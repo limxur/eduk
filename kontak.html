@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontak // Lab Network</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <link rel="shortcut icon" href="favicon/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root{
+    --black: #050709;
+    --panel: #0a0f13;
+    --line: #16232a;
+    --cyan: #2be3ea;
+    --cyan-dim: #12474b;
+    --magenta: #ff3fa0;
+    --green: #3dffa0;
+    --amber: #ffc857;
+    --text: #c6d4d9;
+    --text-dim: #5c7078;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html,body{
+    height:100%;
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    overflow-x: hidden;
+  }
+
+  body{
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- background layers ---------- */
+  .bg-grid{
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 42px 42px;
+    opacity:0.3;
+    mask-image: radial-gradient(ellipse at center, black 10%, transparent 75%);
+    animation: gridshift 30s linear infinite;
+    z-index:0;
+  }
+  @keyframes gridshift{
+    0%{ background-position: 0 0, 0 0; }
+    100%{ background-position: 420px 420px, 420px 420px; }
+  }
+
+  .bg-scan{
+    position:fixed; inset:0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.018) 0px,
+      rgba(255,255,255,0.018) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events:none;
+    mix-blend-mode: overlay;
+    z-index:0;
+  }
+
+  .bg-glow{
+    position:fixed; inset:0;
+    background:
+      radial-gradient(650px 420px at 50% 0%, rgba(43,227,234,0.12), transparent 70%),
+      radial-gradient(480px 300px at 88% 85%, rgba(255,63,160,0.06), transparent 70%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .noise-flicker{
+    position:fixed; inset:0;
+    background: rgba(43,227,234,0.02);
+    pointer-events:none;
+    animation: flicker 6s infinite steps(1);
+    z-index:0;
+  }
+  @keyframes flicker{
+    0%,93%,100%{ opacity:0; }
+    94%{ opacity:1; }
+    95%{ opacity:0; }
+    96%{ opacity:1; }
+    97%{ opacity:0; }
+  }
+
+  /* ---------- navbar (sama seperti index.html) ---------- */
+  .navbar{
+    position:sticky; top:0; left:0; right:0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 44px;
+    border-bottom:1px solid var(--line);
+    background: rgba(5,7,9,0.75);
+    backdrop-filter: blur(6px);
+    z-index:50;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .brand-mark{
+    width:34px; height:34px;
+    background: var(--cyan);
+    border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    color:#04191b; font-size:17px;
+    flex-shrink:0;
+  }
+  .brand-name{ font-size:19px; font-weight:600; letter-spacing:0.02em; color:#eef6f7; }
+  .brand-name b{ color: var(--cyan); font-weight:700; }
+
+  .nav-right{ display:flex; align-items:center; gap:28px; position:relative; }
+
+  .clock{
+    font-family:'Share Tech Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    color: var(--text-dim);
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .clock .dot{ color: var(--green); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  .nav-menu{
+    position:fixed;
+    top:66px; right:24px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    width:220px;
+    background: rgba(10,15,19,0.97);
+    border:1px solid var(--line);
+    padding:10px;
+    gap:4px;
+    opacity:0;
+    visibility:hidden;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    z-index:49;
+  }
+  .nav-menu.open{
+    opacity:1;
+    visibility:visible;
+    transform: translateY(0);
+  }
+  .nav-menu a{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    color: var(--text-dim);
+    text-decoration:none;
+    font-family:'Share Tech Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    border:1px solid transparent;
+    justify-content:flex-start;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+  .nav-menu a i{ font-size:12px; color: var(--cyan-dim); transition: color 0.2s ease; }
+  .nav-menu a:hover{
+    color: var(--cyan);
+    border-color: var(--cyan-dim);
+    background: rgba(43,227,234,0.06);
+  }
+  .nav-menu a:hover i{ color: var(--cyan); }
+  .nav-menu a.active{
+    color: var(--black);
+    background: var(--cyan);
+    border-color: var(--cyan);
+  }
+  .nav-menu a.active i{ color: var(--black); }
+
+  .nav-toggle{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    background:transparent;
+    border:none;
+    width:38px; height:38px;
+    cursor:pointer;
+  }
+  .nav-toggle .bar{
+    width:24px; height:3px;
+    background: var(--cyan);
+    box-shadow: 0 0 8px rgba(43,227,234,0.8);
+    border-radius:2px;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .nav-toggle:hover .bar{
+    background: var(--magenta);
+    box-shadow: 0 0 8px rgba(255,63,160,0.8);
+  }
+  .nav-toggle.open .bar:nth-child(1){ transform: translateY(8px) rotate(45deg); }
+  .nav-toggle.open .bar:nth-child(2){ opacity:0; }
+  .nav-toggle.open .bar:nth-child(3){ transform: translateY(-8px) rotate(-45deg); }
+
+  @media (max-width: 900px){
+    .navbar{ padding:14px 20px; }
+    .nav-menu{ right:20px; }
+    .clock{ display:none; }
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:relative;
+    padding:60px 20px 40px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+    background: radial-gradient(650px 300px at 50% 0%, rgba(43,227,234,0.1), transparent 70%);
+    z-index:1;
+  }
+  header::after{
+    content:'';
+    position:absolute;
+    bottom:-1px; left:50%;
+    transform: translateX(-50%);
+    width:200px; height:2px;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan);
+  }
+  header .eyebrow{
+    font-family:'Share Tech Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.05em;
+    color: var(--green);
+    text-transform:uppercase;
+    margin-bottom:16px;
+  }
+  header .eyebrow::before{ content:'[ SYS.ONLINE ] '; color: var(--text-dim); }
+  header h1{
+    font-weight:700;
+    font-size: clamp(32px, 6vw, 52px);
+    letter-spacing:0.03em;
+    color:#eef8f9;
+    text-transform:uppercase;
+    text-shadow: 0 0 22px rgba(43,227,234,0.35);
+    display:inline-flex;
+    align-items:center;
+    gap:14px;
+  }
+  header p.subtitle{
+    margin-top:16px;
+    font-size:16px;
+    color: var(--text-dim);
+    font-weight:500;
+    letter-spacing:0.02em;
+  }
+  header p.subtitle span{ color: var(--magenta); font-weight:600; }
+
+  /* ---------- layout ---------- */
+  .container {
+    max-width: 1380px;
+    margin: 40px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 25px;
+    flex: 1;
+    position:relative;
+    z-index:1;
+  }
+
+  .card, .widget {
+    background: var(--panel);
+    padding: 25px;
+    border-radius: 2px;
+    border: 1px solid var(--line);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    position: relative;
+    margin-bottom: 25px;
+  }
+
+  .card::before, .widget::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+
+  .card h2, .widget h3 {
+    font-family: 'Share Tech Mono', monospace;
+    color: #eef6f7;
+    font-size: 1.15rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .widget h3{
+    color: var(--cyan);
+    font-size: 1.05rem;
+    text-shadow: 0 0 6px rgba(43,227,234,0.35);
+  }
+
+  .card p.desc {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+
+  .contact-inner-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .contact-inner-grid { grid-template-columns: 1fr; }
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    font-family: 'Share Tech Mono', monospace;
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    color: #eef6f7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 12px;
+    background: rgba(5, 7, 9, 0.7);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    color: #eef6f7;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #536578;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(43,227,234,0.35);
+    background: rgba(43, 227, 234, 0.05);
+  }
+
+  button[type="submit"] {
+    font-family: 'Share Tech Mono', monospace;
+    padding: 12px 24px;
+    background: var(--cyan);
+    color: var(--black);
+    border: none;
+    border-radius: 2px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 14px rgba(43,227,234,0.35);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  button[type="submit"]:hover {
+    transform: translateY(-2px);
+    background: var(--magenta);
+    color: #ffffff;
+    box-shadow: 0 0 18px rgba(255, 63, 160, 0.45);
+  }
+
+  .info-list { list-style: none; }
+
+  .info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .info-icon {
+    width: 38px;
+    height: 38px;
+    background: rgba(43, 227, 234, 0.1);
+    color: var(--cyan);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .info-text h4 {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    color: #eef6f7;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .info-text p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    word-break: break-all;
+  }
+
+  .operational-box {
+    background: rgba(5, 7, 9, 0.6);
+    padding: 14px;
+    border-radius: 2px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--amber);
+    margin-top: 15px;
+  }
+
+  .operational-box h5 {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--amber);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .operational-box p { font-size: 0.85rem; color: var(--text-dim); }
+
+  .cyber-list {
+    list-style: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .cyber-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+    color: var(--text-dim);
+  }
+
+  .cyber-list li:last-child { border-bottom: none; }
+
+  .terminal-box {
+    background: #000000;
+    border: 1px solid var(--line);
+    padding: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--cyan);
+    border-radius: 2px;
+    line-height: 1.4;
+    text-shadow: 0 0 4px rgba(43, 227, 234, 0.4);
+  }
+
+  .map-image-container {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    background: #000000;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 12px rgba(43, 227, 234, 0.1);
+  }
+
+  .map-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 5px;
+  }
+
+  /* ==== FAQ Accordion ==== */
+  .faq-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .faq-item {
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    background: rgba(5, 7, 9, 0.5);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .faq-item.open {
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(43,227,234,0.35);
+  }
+
+  .faq-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #eef6f7;
+    user-select: none;
+  }
+
+  .faq-question i {
+    color: var(--cyan);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+
+  .faq-item.open .faq-question i {
+    transform: rotate(180deg);
+    color: var(--magenta);
+  }
+
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+    padding: 0 16px;
+  }
+
+  .faq-item.open .faq-answer {
+    max-height: 200px;
+    padding: 0 16px 16px;
+  }
+
+  .faq-answer p { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* ==== Ping Test Widget ==== */
+  .ping-btn {
+    font-family: 'Share Tech Mono', monospace;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    border-radius: 2px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    margin-bottom: 12px;
+  }
+
+  .ping-btn:hover {
+    background: var(--cyan);
+    color: var(--black);
+    box-shadow: 0 0 12px var(--cyan);
+  }
+
+  .ping-result {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--cyan);
+    min-height: 70px;
+    line-height: 1.6;
+  }
+
+  .ping-result .ok { color: var(--green); }
+  .ping-result .warn { color: var(--amber); }
+
+  /* ==== Social Media Widget ==== */
+  .social-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    background: rgba(5, 7, 9, 0.7);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: var(--cyan);
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .social-btn:hover {
+    background: var(--cyan);
+    color: var(--black);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 14px rgba(43,227,234,0.35);
+  }
+
+  @media (max-width: 1100px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar-left, .sidebar-right { order: 2; }
+    .main-content { order: 1; }
+  }
+
+  /* ---------- corner HUD brackets ---------- */
+  .corner{
+    position:fixed;
+    width:64px; height:64px;
+    border: 2px solid var(--cyan-dim);
+    opacity:0.7;
+    z-index:2;
+    pointer-events:none;
+  }
+  .corner::after{
+    content:'';
+    position:absolute;
+    width:8px; height:8px;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+  .corner.bl{ bottom:24px; left:24px; border-right:none; border-top:none; }
+  .corner.bl::after{ bottom:-2px; left:-2px; }
+  .corner.br{ bottom:24px; right:24px; border-left:none; border-top:none; }
+  .corner.br::after{ bottom:-2px; right:-2px; }
+
+  @media (max-width: 640px){
+    .corner{ width:40px; height:40px; }
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    font-family: 'Share Tech Mono', monospace;
+    text-align: center;
+    padding: 25px;
+    background: rgba(5, 7, 9, 0.95);
+    color: var(--text-dim);
+    margin-top: auto;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    width: 100%;
+    position:relative;
+    z-index:1;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    <div class="bg-scan"></div>
+    <div class="noise-flicker"></div>
+
+    <nav class="navbar">
+        <a href="index.html" class="brand">
+            <div class="brand-mark">◈</div>
+            <div class="brand-name">Lab <b>Network</b></div>
+        </a>
+
+        <div class="nav-right">
+            <div class="clock"><span class="dot">●</span> <span id="clock">00:00:00 UTC</span></div>
+
+            <div class="nav-menu" id="navLinks">
+                <a href="index.html"><i class="fa-solid fa-house"></i> Beranda</a>
+                <a href="profil.html"><i class="fa-solid fa-user"></i> Profil</a>
+                <a href="kegiatan.html"><i class="fa-solid fa-list-check"></i> Kegiatan</a>
+                <a href="galeri.html"><i class="fa-solid fa-image"></i> Galeri</a>
+                <a href="kontak.html" class="active"><i class="fa-solid fa-envelope"></i> Kontak</a>
+                <a href="tautan.html"><i class="fa-solid fa-link"></i> Tautan</a>
+            </div>
+
+            <button class="nav-toggle" id="menuToggle" type="button" aria-label="Buka menu" aria-expanded="false">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <header>
+        <div class="eyebrow">Transmission Portal</div>
+        <h1><i class="fa-solid fa-envelope"></i> Contact Terminal</h1>
+        <p class="subtitle">Saluran Informasi &amp; Layanan Komunikasi <span>Lab TJKT</span></p>
+    </header>
+
+    <div class="container">
+
+        <aside class="sidebar-left">
+            <div class="widget">
+                <h3><i class="fa-solid fa-network-wired"></i> Comm Status</h3>
+                <ul class="cyber-list">
+                    <li><span>SMTP SERVER</span> <span style="color:var(--green); font-weight:bold;">ONLINE</span></li>
+                    <li><span>GATEWAY</span> <span style="color:#eef6f7;">192.168.2.1</span></li>
+                    <li><span>LATENCY</span> <span>12 ms</span></li>
+                    <li><span>ENCRYPTION</span> <span>AES-256</span></li>
+                </ul>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fa-solid fa-terminal"></i> Console Log</h3>
+                <div class="terminal-box">
+                    &gt; Initializing Mailer...<br>
+                    &gt; Port 465 SSL [OK]<br>
+                    &gt; Route established.<br>
+                    &gt; Ready for incoming transmission...
+                </div>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fa-solid fa-satellite-dish"></i> Ping Test</h3>
+                <button class="ping-btn" id="pingBtn"><i class="fa-solid fa-bolt"></i> Jalankan Ping ke Lab Server</button>
+                <div class="ping-result" id="pingResult">&gt; Klik tombol untuk memulai tes koneksi...</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="card">
+                <div class="contact-inner-grid">
+
+                    <div>
+                        <h2><i class="fa-solid fa-paper-plane" style="color: var(--cyan);"></i> Transmit Msg</h2>
+                        <p class="desc">Kirim pertanyaan seputar materi &amp; praktikum TJKT.</p>
+
+                        <form action="#" method="post">
+                            <div class="form-group">
+                                <label for="nama">Nama Lengkap</label>
+                                <input type="text" id="nama" name="nama" placeholder="TRANSMIT_SENDER_NAME" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Alamat Email</label>
+                                <input type="email" id="email" name="email" placeholder="USER@DOMAIN.COM" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="pesan">Pesan / Pertanyaan</label>
+                                <textarea id="pesan" name="pesan" rows="4" placeholder="ENTER_DATA_HERE..." required></textarea>
+                            </div>
+
+                            <button type="submit"><i class="fa-solid fa-paper-plane"></i> Send Data</button>
+                        </form>
+                    </div>
+
+                    <div>
+                        <h2><i class="fa-solid fa-address-book" style="color: var(--cyan);"></i> Info Hotline</h2>
+                        <p class="desc">Saluran Laboratorium TJKT.</p>
+
+                        <ul class="info-list">
+                            <li class="info-item">
+                                <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
+                                <div class="info-text">
+                                    <h4>Email Resmi</h4>
+                                    <p>Bandaru@tjkt.sch.id</p>
+                                </div>
+                            </li>
+                            <li class="info-item">
+                                <div class="info-icon"><i class="fa-solid fa-phone"></i></div>
+                                <div class="info-text">
+                                    <h4>WhatsApp / Telp</h4>
+                                    <p>+62 851 3662 9361</p>
+                                </div>
+                            </li>
+                            <li class="info-item">
+                                <div class="info-icon"><i class="fa-solid fa-location-dot"></i></div>
+                                <div class="info-text">
+                                    <h4>Lokasi Lab</h4>
+                                    <p>Gedung Lab Komputer, Lantai 1 SMK Negeri 1 Klaten</p>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div class="operational-box">
+                            <h5><i class="fa-solid fa-clock"></i> Jam Operasional</h5>
+                            <p>Senin - Jumat: 07.00 - 15.30 WIB</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fa-solid fa-circle-question" style="color: var(--cyan);"></i> FAQ // Pertanyaan Umum</h2>
+                <p class="desc">Klik pertanyaan untuk melihat jawabannya.</p>
+
+                <div class="faq-list" id="faqList">
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            Bagaimana cara mendaftar praktikum di Lab TJKT?
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Pendaftaran dilakukan melalui wali kelas atau langsung menghubungi Admin Lab via WhatsApp/Telp yang tertera di halaman ini.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            Apakah siswa boleh membawa laptop sendiri?
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Boleh, selama sudah mendapat izin dari pengajar dan mengikuti prosedur K3LH lab yang berlaku.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            Berapa lama waktu respon untuk pesan yang dikirim?
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Pesan biasanya direspon dalam 1x24 jam pada hari &amp; jam operasional lab.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <div class="faq-question">
+                            Apakah ada sertifikat setelah menyelesaikan praktikum?
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer">
+                            <p>Ya, untuk modul tertentu seperti sertifikasi MikroTik dan UKK, siswa akan mendapatkan sertifikat kompetensi.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="sidebar-right">
+            <div class="widget">
+                <h3><i class="fa-solid fa-map-location-dot"></i> Network Node</h3>
+                <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom: 10px;">
+                    Lab Komputer TJKT SMK Negeri 1 Klaten, unit 2.
+                </p>
+                <div class="map-image-container">
+                    <img src="image/oo.jpg" alt="Network Node Image">
+                </div>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fa-solid fa-user-shield"></i> Admin Duty</h3>
+                <ul class="cyber-list">
+                    <li><span>Lab Admin</span> <span>Pak Bandaru</span></li>
+                    <li><span>Net Engineer</span> <span>Mas Alim</span></li>
+                    <li><span>Sysadmin</span> <span>Pak Mulya</span></li>
+                </ul>
+            </div>
+
+            <div class="widget">
+                <h3><i class="fa-solid fa-share-nodes"></i> Sosial Media</h3>
+                <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom: 14px;">Ikuti kabar &amp; kegiatan Lab TJKT.</p>
+                <div class="social-grid">
+                    <a href="#" class="social-btn" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="social-btn" aria-label="YouTube" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="#" class="social-btn" aria-label="TikTok" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                    <a href="#" class="social-btn" aria-label="WhatsApp Channel" title="WhatsApp Channel"><i class="fa-brands fa-whatsapp"></i></a>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Edukasi TJKT // ALL_SYSTEMS_OPERATIONAL</p>
+    </footer>
+
+    <script>
+        function pad(n){ return n.toString().padStart(2,'0'); }
+        function tick(){
+            const d = new Date();
+            document.getElementById('clock').textContent =
+                pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+':'+pad(d.getUTCSeconds())+' UTC';
+        }
+        tick();
+        setInterval(tick, 1000);
+
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = navLinks.classList.toggle('open');
+            menuToggle.classList.toggle('open', isOpen);
+            menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!menuToggle.contains(event.target) && !navLinks.contains(event.target)) {
+                navLinks.classList.remove('open');
+                menuToggle.classList.remove('open');
+                menuToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        (function highlightActive(){
+            const current = window.location.pathname.split('/').pop() || 'index.html';
+            document.querySelectorAll('.nav-menu a').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === current) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        })();
+
+        // Toggle Accordion FAQ
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const question = item.querySelector('.faq-question');
+            question.addEventListener('click', () => {
+                const isOpen = item.classList.contains('open');
+                faqItems.forEach(i => i.classList.remove('open'));
+                if (!isOpen) {
+                    item.classList.add('open');
+                }
+            });
+        });
+
+        // Simulasi Ping Test (efek terminal, tanpa koneksi jaringan sungguhan)
+        const pingBtn = document.getElementById('pingBtn');
+        const pingResult = document.getElementById('pingResult');
+
+        pingBtn.addEventListener('click', () => {
+            pingBtn.disabled = true;
+            pingResult.innerHTML = '&gt; PING lab-server.tjkt.local...';
+
+            const lines = [
+                'Reply from 192.168.2.1: bytes=32 time=' + (Math.floor(Math.random() * 15) + 5) + 'ms TTL=64',
+                'Reply from 192.168.2.1: bytes=32 time=' + (Math.floor(Math.random() * 15) + 5) + 'ms TTL=64',
+                'Reply from 192.168.2.1: bytes=32 time=' + (Math.floor(Math.random() * 15) + 5) + 'ms TTL=64',
+            ];
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < lines.length) {
+                    pingResult.innerHTML += '<br>&gt; ' + lines[i];
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    pingResult.innerHTML += '<br><span class="ok">&gt; STATUS: CONNECTION STABLE [0% LOSS]</span>';
+                    pingBtn.disabled = false;
+                }
+            }, 500);
+        });
+    </script>
+
+</body>
+</html>
